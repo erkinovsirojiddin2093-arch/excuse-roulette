@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Excuse Roulette</title>
+    <meta name="description" content="Running late? Spin the wheel and get a funny excuse." />
+    <meta name="theme-color" content="#FFFFFF" />
+    <meta property="og:title" content="Excuse Roulette" />
+    <meta property="og:description" content="Running late? Spin the wheel and get a funny excuse." />
+    <meta property="og:type" content="website" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23142A66'/%3E%3Ccircle cx='12' cy='12' r='7' fill='%232563EB'/%3E%3Cpath d='M12 5v14M5 12h14M7.05 7.05l9.9 9.9M16.95 7.05l-9.9 9.9' stroke='%23fff' stroke-width='1.2'/%3E%3Ccircle cx='12' cy='12' r='2.2' fill='%23fff'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet" />
+
+    <style>
+      :root {
+        --ink: #0a1a3a;
+        --ink-2: #46557a;
+        --ink-3: #7a87a3;
+        --line: #e4e8f0;
+        --subtle: #f4f6fa;
+        --navy: #142a66;
+        --navy-hover: #0f2052;
+        --blue: #2563eb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+        -webkit-tap-highlight-color: transparent;
+        color-scheme: light;
+      }
+
+      body {
+        margin: 0;
+        background: #ffffff;
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font-feature-settings: "cv11";
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      .app {
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 16px 20px calc(24px + env(safe-area-inset-bottom));
+      }
+
+      /* Header ---------------------------------------------------------- */
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 44px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .count {
+        font-size: 12.5px;
+        color: var(--ink-3);
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Layout ---------------------------------------------------------- */
+
+      main {
+        flex: 1;
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        gap: 28px;
+        padding: 20px 0 8px;
+      }
+
+      .panel {
+        width: 100%;
+        max-width: 460px;
+      }
+
+      @media (min-width: 900px) {
+        main {
+          grid-template-columns: 460px minmax(0, 1fr);
+          justify-items: stretch;
+          align-items: center;
+          gap: 64px;
+          padding: 24px 0;
+        }
+        .panel {
+          max-width: 440px;
+        }
+      }
+
+      /* Wheel ----------------------------------------------------------- */
+
+      .wheel-wrap {
+        position: relative;
+        width: min(88vw, 460px);
+        aspect-ratio: 1;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      /* Clipped to a circle so the rotating square never pokes outside the page. */
+      .rotor {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        overflow: hidden;
+        box-shadow: 0 18px 40px rgba(10, 26, 58, 0.18);
+      }
+
+      .wheel {
+        display: block;
+        width: 100%;
+        height: 100%;
+        will-change: transform;
+      }
+
+      .wheel text {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.005em;
+        pointer-events: none;
+      }
+
+      .pointer {
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        width: 34px;
+        height: 44px;
+        margin-left: -17px;
+        transform-origin: 50% 12px;
+        transition: transform 90ms ease-out;
+        filter: drop-shadow(0 3px 5px rgba(10, 26, 58, 0.25));
+        z-index: 2;
+      }
+
+      .pointer.flick {
+        transform: rotate(-16deg);
+        transition-duration: 40ms;
+      }
+
+      .hub {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 23%;
+        aspect-ratio: 1;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        background: #ffffff;
+        color: var(--navy);
+        font-size: clamp(12px, 3.2vw, 15px);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        box-shadow:
+          0 2px 4px rgba(10, 26, 58, 0.12),
+          0 10px 24px rgba(10, 26, 58, 0.18);
+        transition:
+          transform 140ms ease,
+          box-shadow 140ms ease;
+        z-index: 2;
+      }
+
+      .hub:hover:not(:disabled) {
+        box-shadow:
+          0 2px 4px rgba(10, 26, 58, 0.14),
+          0 14px 30px rgba(10, 26, 58, 0.24);
+      }
+
+      .hub:active:not(:disabled) {
+        transform: translate(-50%, -50%) scale(0.96);
+      }
+
+      /* Result card ----------------------------------------------------- */
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: #ffffff;
+        box-shadow:
+          0 1px 2px rgba(10, 26, 58, 0.04),
+          0 16px 40px rgba(10, 26, 58, 0.07);
+        padding: 20px 22px 16px;
+      }
+
+      .card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 12.5px;
+        font-weight: 500;
+        color: var(--ink-3);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .category {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--ink-2);
+        font-weight: 600;
+      }
+
+      .swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        box-shadow: inset 0 0 0 1px rgba(10, 26, 58, 0.12);
+      }
+
+      .swatch:not([style]) {
+        display: none;
+      }
+
+      .excuse {
+        margin: 16px 0 20px;
+        min-height: calc(1.36em * 4);
+        font-size: clamp(19px, 4.8vw, 24px);
+        line-height: 1.36;
+        font-weight: 550;
+        letter-spacing: -0.015em;
+        text-wrap: pretty;
+      }
+
+      .excuse.placeholder {
+        color: var(--ink-2);
+        font-weight: 500;
+      }
+
+      .card-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+        font-size: 12.5px;
+        color: var(--ink-3);
+      }
+
+      /* Buttons --------------------------------------------------------- */
+
+      button {
+        font: inherit;
+        cursor: pointer;
+        border: 0;
+        touch-action: manipulation;
+      }
+
+      button:focus-visible {
+        outline: 2px solid var(--blue);
+        outline-offset: 3px;
+      }
+
+      button:disabled {
+        cursor: default;
+      }
+
+      .primary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 54px;
+        margin-top: 16px;
+        border-radius: 14px;
+        background: var(--navy);
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: 600;
+        box-shadow: 0 1px 2px rgba(10, 26, 58, 0.2);
+        transition:
+          background-color 150ms ease,
+          transform 120ms ease,
+          opacity 150ms ease;
+        user-select: none;
+      }
+
+      .primary:hover:not(:disabled) {
+        background: var(--navy-hover);
+      }
+
+      .primary:active:not(:disabled) {
+        transform: scale(0.98);
+      }
+
+      .primary:disabled {
+        opacity: 0.6;
+      }
+
+      .copy {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 10px;
+        margin-right: -8px;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--ink-2);
+        font-size: 13px;
+        font-weight: 500;
+        transition:
+          background-color 150ms ease,
+          color 150ms ease;
+      }
+
+      .copy:hover {
+        background: var(--subtle);
+        color: var(--ink);
+      }
+
+      .copy[hidden] {
+        display: none;
+      }
+
+      .copy.done {
+        color: var(--blue);
+      }
+
+      .hint {
+        margin: 12px 0 0;
+        text-align: center;
+        font-size: 12.5px;
+        color: var(--ink-3);
+      }
+
+      kbd {
+        display: inline-block;
+        padding: 1px 6px;
+        border: 1px solid var(--line);
+        border-bottom-width: 2px;
+        border-radius: 5px;
+        font: 500 11.5px/1.4 Inter, ui-sans-serif, system-ui, sans-serif;
+        color: var(--ink-2);
+        background: #ffffff;
+      }
+
+      @media (hover: none) {
+        .keyboard-only {
+          display: none;
+        }
+      }
+
+      /* Motion ---------------------------------------------------------- */
+
+      .excuse.dim {
+        opacity: 0.35;
+        transition: opacity 200ms ease;
+      }
+
+      .excuse.in {
+        animation: rise 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .card.landed {
+        animation: settle 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+      }
+
+      @keyframes settle {
+        35% {
+          transform: translateY(-3px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .pointer,
+        .hub,
+        .primary {
+          transition: none;
+        }
+        .pointer.flick {
+          transform: none;
+        }
+        .excuse.in,
+        .card.landed {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app">
+      <header>
+        <div class="brand">
+          <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
+            <rect width="24" height="24" rx="6" fill="#142A66" />
+            <circle cx="12" cy="12" r="7" fill="#2563EB" />
+            <path d="M12 5v14M5 12h14M7.05 7.05l9.9 9.9M16.95 7.05l-9.9 9.9" stroke="#FFFFFF" stroke-width="1.2" />
+            <circle cx="12" cy="12" r="2.2" fill="#FFFFFF" />
+          </svg>
+          Excuse Roulette
+        </div>
+        <span class="count" id="count" aria-hidden="true"></span>
+      </header>
+
+      <main>
+        <div class="wheel-wrap">
+          <svg class="pointer" id="pointer" viewBox="0 0 34 44" aria-hidden="true">
+            <path d="M17 42 4.6 17.4A13 13 0 1 1 29.4 17.4Z" fill="#142A66" stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round" />
+            <circle cx="17" cy="13" r="4" fill="#FFFFFF" />
+          </svg>
+          <div class="rotor">
+            <svg class="wheel" id="wheel" viewBox="0 0 400 400" role="img" aria-label="A wheel of excuse categories"></svg>
+          </div>
+          <button class="hub" id="hub" type="button" aria-label="Spin the wheel">SPIN</button>
+        </div>
+
+        <div class="panel">
+          <article class="card" id="card">
+            <div class="card-top">
+              <span class="category"><span class="swatch" id="swatch"></span><span id="category">Running late?</span></span>
+              <span id="number"></span>
+            </div>
+            <p class="excuse placeholder" id="excuse" aria-live="polite">Spin the wheel and let fate choose your excuse.</p>
+            <div class="card-foot">
+              <span id="total"></span>
+              <button class="copy" id="copy" type="button" hidden>
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                  <rect x="5.25" y="5.25" width="8" height="8" rx="1.75" />
+                  <path d="M10.75 5.25V3.5a1.25 1.25 0 0 0-1.25-1.25H3.5A1.25 1.25 0 0 0 2.25 3.5v6a1.25 1.25 0 0 0 1.25 1.25h1.75" />
+                </svg>
+                <span>Copy</span>
+              </button>
+            </div>
+          </article>
+          <button class="primary" id="spin" type="button">Spin the wheel</button>
+          <p class="hint keyboard-only">or press <kbd>Space</kbd></p>
+        </div>
+      </main>
+    </div>
+
+    <noscript>
+      <p style="text-align: center; padding: 0 20px; color: #46557a">Excuse Roulette needs JavaScript to spin the wheel.</p>
+    </noscript>
+
+    <script>
+      // Every excuse lives here, in the page. Each category is one slice of the wheel.
+      // Add, remove or rename freely; the wheel redraws itself from this list.
+      const CATEGORIES = [
+        {
+          name: "Traffic",
+          excuses: [
+            "A man was walking a goose across the crosswalk, and the goose refused to be hurried.",
+            "My bus driver stopped to help a turtle cross the road. Honestly, I respect it.",
+            "Every traffic light turned red the moment it saw me. I think they have a group chat.",
+            "I took a shortcut that turned out to be a very scenic longcut.",
+            "A parade started on my street. I don’t know who it was for, but I clapped anyway.",
+            "My GPS said “recalculating” for eleven minutes and I didn’t want to interrupt it.",
+          ],
+        },
+        {
+          name: "Pets",
+          excuses: [
+            "My cat sat on my keys and made eye contact. I had to wait for her to move on her own terms.",
+            "My dog learned to open the front door this morning, so we needed a serious talk about boundaries.",
+            "My goldfish looked lonely, so I stayed for one more episode of our show.",
+            "The neighbor’s parrot learned my alarm sound and switched it off for me.",
+            "My cat knocked my phone into the laundry basket and then supervised the search.",
+            "My dog hid one of my shoes and wanted a fair trade for it.",
+          ],
+        },
+        {
+          name: "Weather",
+          excuses: [
+            "The wind took my umbrella, and it only felt fair to chase it.",
+            "It was so foggy I accidentally followed someone else to their office.",
+            "A single cloud followed me and rained only on me. It took a while to lose it.",
+            "The snow was perfect for a snowman, and I am not a monster.",
+            "There was a rainbow, so I went looking for the end of it. No gold, just a very confused farmer.",
+            "It was too nice outside. I had to stop and appreciate it, for my health.",
+          ],
+        },
+        {
+          name: "Tech",
+          excuses: [
+            "My phone updated overnight and woke up with a completely different personality.",
+            "My smart fridge locked the door until I promised to eat more vegetables.",
+            "I got stuck in a captcha loop. Apparently I’m not a robot, but I’m also not a bicycle.",
+            "My laptop said “Do not turn off your computer” and I didn’t feel I had the authority to leave.",
+            "My headphones connected to my neighbor’s speaker, and I had to apologize for my playlist.",
+            "My alarm went off, but it was in airplane mode emotionally.",
+          ],
+        },
+        {
+          name: "Neighbors",
+          excuses: [
+            "My neighbor asked me to hold her ladder “for one second” forty minutes ago.",
+            "A neighbor started telling me about his tomatoes, and they are very good tomatoes.",
+            "Someone moved in next door with a piano, and I had to stay for the end of the song.",
+            "The kid next door sold me a lemonade, then a second lemonade, then a business plan.",
+            "A toddler pressed every button in the elevator and waved at each floor.",
+            "Two neighbors were arguing about a parking spot, and I was appointed judge.",
+          ],
+        },
+        {
+          name: "Breakfast",
+          excuses: [
+            "My toast landed butter-side up, and I needed a moment to process my luck.",
+            "I poured the cereal, went out for milk, and forgot why I had left.",
+            "The coffee machine and I disagreed about what “strong” means.",
+            "The first pancake is never right. Neither was the second. Or the ninth.",
+            "My egg had two yolks. I took it as a sign and had to sit down.",
+            "I finally opened a jar that had been stuck for three years and needed to tell everyone.",
+          ],
+        },
+        {
+          name: "Science",
+          excuses: [
+            "I accidentally discovered a new shade of gray while doing laundry and had to name it.",
+            "I got caught in a small time loop. This is the fourth time I’ve said this.",
+            "My bread dough was proving, and I had to wait for it to finish proving its point.",
+            "I was testing whether a watched kettle boils. Results: inconclusive, but delayed.",
+            "Gravity was a little stronger in my bedroom this morning.",
+            "I tried to calculate the fastest route, and the math got very interesting.",
+          ],
+        },
+        {
+          name: "Paperwork",
+          excuses: [
+            "I had to fill out a form to request the form I needed for the form.",
+            "The bank needed a second ID to confirm that my first ID was really me.",
+            "I was on hold, and the hold music was a genuinely great song. I couldn’t hang up.",
+            "My library book was so overdue that I had to go and apologize in person.",
+            "My password expired, and the new one needed a capital letter, a number and a hieroglyph.",
+            "I got a parking ticket for a car I don’t own, so I had to go and meet the car.",
+          ],
+        },
+        {
+          name: "Wildlife",
+          excuses: [
+            "A squirrel stole my sandwich, and we had to negotiate a ceasefire.",
+            "A family of ducks was crossing the road, and you simply do not rush ducks.",
+            "A seagull took my bus ticket. The driver just said, “Again?”",
+            "A bee followed me for three blocks. I think we’re friends now.",
+            "A crow brought me a shiny button, and it would have been rude to leave right away.",
+            "There was a cat on the bus, and nobody knew whose it was, including the cat.",
+          ],
+        },
+        {
+          name: "Time",
+          excuses: [
+            "Daylight saving time happened to me personally.",
+            "I woke up on time, but my socks didn’t.",
+            "I left at the right time. The time just didn’t come with me.",
+            "I was early, so I went home to wait, and then I was late.",
+            "My watch stopped, and out of solidarity, so did I.",
+            "My clock was set to the right time zone, just from last year.",
+          ],
+        },
+        {
+          name: "Family",
+          excuses: [
+            "My grandmother called to tell me a story, and her stories have chapters.",
+            "My little brother hid my shoes as an escape room and didn’t give me any clues.",
+            "My mom asked me to “quickly” fix her phone.",
+            "My dad started a joke, and the joke had a sequel.",
+            "My aunt sent a seventeen-minute voice message, and it was very important.",
+            "My baby cousin fell asleep on me, and moving was not an option.",
+          ],
+        },
+        {
+          name: "Mystery",
+          excuses: [
+            "I can’t say why I’m late. It’s classified, and I don’t fully understand it myself.",
+            "Someone had parked a horse in front of my door. A whole horse.",
+            "My keys were in the fridge. I don’t know who put them there. I live alone.",
+            "I followed a very convincing sign that just said “This Way”.",
+            "All my socks vanished except one, and it wasn’t the right one.",
+            "I went to the wrong place, and honestly, it was a lovely place.",
+          ],
+        },
+      ];
+
+      /* ------------------------------------------------------------------ */
+      /* Draw the wheel                                                      */
+      /* ------------------------------------------------------------------ */
+
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const N = CATEGORIES.length;
+      const SEG = 360 / N;
+      const C = 200;
+      const R = 184;
+      const FILLS = ["#1E3A8A", "#2563EB", "#E8EEFC"];
+      const TEXT = ["#FFFFFF", "#FFFFFF", "#142A66"];
+
+      const $ = (id) => document.getElementById(id);
+      const wheel = $("wheel");
+
+      const el = (name, attrs) => {
+        const node = document.createElementNS(SVG_NS, name);
+        for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+        return node;
+      };
+      const polar = (deg, r) => {
+        const a = ((deg - 90) * Math.PI) / 180; // 0 degrees = top, clockwise
+        return [C + r * Math.cos(a), C + r * Math.sin(a)];
+      };
+
+      wheel.appendChild(el("circle", { cx: C, cy: C, r: 199, fill: "#142A66" }));
+      CATEGORIES.forEach((cat, i) => {
+        const [x1, y1] = polar(i * SEG, R);
+        const [x2, y2] = polar((i + 1) * SEG, R);
+        wheel.appendChild(
+          el("path", {
+            d: `M${C},${C} L${x1},${y1} A${R},${R} 0 0 1 ${x2},${y2} Z`,
+            fill: FILLS[i % FILLS.length],
+            stroke: "#FFFFFF",
+            "stroke-width": 1.5,
+            "stroke-linejoin": "round",
+          }),
+        );
+        const mid = i * SEG + SEG / 2;
+        const label = el("text", {
+          x: C + R * 0.6,
+          y: C,
+          fill: TEXT[i % TEXT.length],
+          "text-anchor": "middle",
+          "dominant-baseline": "central",
+          transform: `rotate(${mid - 90} ${C} ${C})`,
+        });
+        label.textContent = cat.name;
+        wheel.appendChild(label);
+      });
+      for (let i = 0; i < N * 2; i++) {
+        const [x, y] = polar(i * (SEG / 2), 191.5);
+        wheel.appendChild(el("circle", { cx: x, cy: y, r: 2.6, fill: i % 2 ? "#5B7FD6" : "#C9D7F7" }));
+      }
+
+      /* ------------------------------------------------------------------ */
+      /* Spinning                                                            */
+      /* ------------------------------------------------------------------ */
+
+      const mod = (n, m) => ((n % m) + m) % m;
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const pointer = $("pointer");
+      const spinBtn = $("spin");
+      const hub = $("hub");
+      const copyBtn = $("copy");
+      const excuseEl = $("excuse");
+      const card = $("card");
+
+      const total = CATEGORIES.reduce((n, c) => n + c.excuses.length, 0);
+      $("total").textContent = `${total} excuses, ${N} categories`;
+
+      // Each category keeps its own shuffled bag, so excuses don't repeat until all have been used.
+      const bags = CATEGORIES.map(() => []);
+      const lastPicked = CATEGORIES.map(() => -1);
+      function draw(catIndex) {
+        const list = CATEGORIES[catIndex].excuses;
+        if (!bags[catIndex].length) {
+          const bag = list.map((_, i) => i);
+          for (let i = bag.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [bag[i], bag[j]] = [bag[j], bag[i]];
+          }
+          if (bag.length > 1 && bag[bag.length - 1] === lastPicked[catIndex]) {
+            [bag[0], bag[bag.length - 1]] = [bag[bag.length - 1], bag[0]];
+          }
+          bags[catIndex] = bag;
+        }
+        const pick = bags[catIndex].pop();
+        lastPicked[catIndex] = pick;
+        return pick;
+      }
+
+      let angle = -SEG / 2; // start with the pointer in the middle of the first slice
+      let spinning = false;
+      let spins = 0;
+      wheel.style.transform = `rotate(${angle}deg)`;
+
+      const sliceAt = (rotation) => Math.floor(mod(-rotation, 360) / SEG);
+      const easeOut = (t) => 1 - Math.pow(1 - t, 4);
+
+      function tick() {
+        if (reduceMotion.matches) return;
+        pointer.classList.remove("flick");
+        void pointer.getBoundingClientRect();
+        pointer.classList.add("flick");
+        clearTimeout(tick.timer);
+        tick.timer = setTimeout(() => pointer.classList.remove("flick"), 45);
+      }
+
+      function setBusy(busy) {
+        spinning = busy;
+        spinBtn.disabled = busy;
+        hub.disabled = busy;
+        spinBtn.textContent = busy ? "Spinning…" : "Spin again";
+      }
+
+      function spin() {
+        if (spinning) return;
+        setBusy(true);
+        excuseEl.classList.remove("in");
+        excuseEl.classList.add("dim");
+
+        const target = Math.floor(Math.random() * N);
+        const jitter = (Math.random() - 0.5) * SEG * 0.7;
+        const landing = mod(-(target * SEG + SEG / 2 + jitter), 360);
+        const turns = reduceMotion.matches ? 1 : 5 + Math.floor(Math.random() * 3);
+        const start = angle;
+        const delta = turns * 360 + mod(landing - mod(start, 360), 360);
+        const duration = reduceMotion.matches ? 700 : 4600 + Math.random() * 900;
+        let last = sliceAt(start);
+        let t0 = null;
+
+        const frame = (now) => {
+          if (t0 === null) t0 = now;
+          const t = Math.min(1, (now - t0) / duration);
+          const a = start + delta * easeOut(t);
+          wheel.style.transform = `rotate(${a}deg)`;
+          const slice = sliceAt(a);
+          if (slice !== last) {
+            last = slice;
+            tick();
+          }
+          if (t < 1) requestAnimationFrame(frame);
+          else land(start + delta, target);
+        };
+        requestAnimationFrame(frame);
+      }
+
+      function land(finalAngle, catIndex) {
+        angle = mod(finalAngle, 360);
+        wheel.style.transform = `rotate(${angle}deg)`;
+        const pick = draw(catIndex);
+        const cat = CATEGORIES[catIndex];
+        const number = CATEGORIES.slice(0, catIndex).reduce((n, c) => n + c.excuses.length, 0) + pick + 1;
+
+        spins += 1;
+        $("category").textContent = cat.name;
+        $("swatch").style.background = FILLS[catIndex % FILLS.length];
+        $("number").textContent = `No. ${String(number).padStart(2, "0")}`;
+        $("count").textContent = `${spins} ${spins === 1 ? "spin" : "spins"}`;
+        excuseEl.textContent = cat.excuses[pick];
+        excuseEl.classList.remove("placeholder", "dim");
+        void excuseEl.offsetWidth;
+        excuseEl.classList.add("in");
+        card.classList.remove("landed");
+        void card.offsetWidth;
+        card.classList.add("landed");
+        copyBtn.hidden = false;
+        resetCopy();
+        if (navigator.vibrate && !reduceMotion.matches) navigator.vibrate(12);
+        setBusy(false);
+      }
+
+      /* ------------------------------------------------------------------ */
+      /* Copy and keyboard                                                   */
+      /* ------------------------------------------------------------------ */
+
+      function resetCopy() {
+        copyBtn.classList.remove("done");
+        copyBtn.querySelector("span").textContent = "Copy";
+      }
+
+      async function copy() {
+        const text = excuseEl.textContent.trim();
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          const area = document.createElement("textarea");
+          area.value = text;
+          area.setAttribute("readonly", "");
+          area.style.position = "fixed";
+          area.style.opacity = "0";
+          document.body.appendChild(area);
+          area.select();
+          document.execCommand("copy");
+          area.remove();
+        }
+        copyBtn.classList.add("done");
+        copyBtn.querySelector("span").textContent = "Copied";
+        clearTimeout(copy.timer);
+        copy.timer = setTimeout(resetCopy, 1600);
+      }
+
+      spinBtn.addEventListener("click", spin);
+      hub.addEventListener("click", spin);
+      copyBtn.addEventListener("click", copy);
+
+      document.addEventListener("keydown", (e) => {
+        if (e.target instanceof HTMLButtonElement || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          spin();
+        }
+      });
+    </script>
+  </body>
+</html>
